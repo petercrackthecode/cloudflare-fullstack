@@ -1,15 +1,9 @@
-addEventListener("fetch", (event) => {
-  event.respondWith(handleRequest(event.request));
-});
-/**
- * Respond with hello worker text
- * @param {Request} request
- */
-async function handleRequest(request) {
-  const response = await fetch(request.url)
+addEventListener("fetch", async (event) => {
+  const myResponse = await fetch(event.request.url)
     .then((response) => {
-      if (response === 200) {
-        return response.json();
+      if (response.status === 200) {
+        // console.log("Hello world");
+        console.log(`response= ${response.json()}`);
       } else {
         throw new Error(`An error occured`);
       }
@@ -18,9 +12,17 @@ async function handleRequest(request) {
       throw new Error(`Hi I am an error: ${error}`);
     });
 
-  console.log(`response= ${response}`);
-
-  return new Request("abuchikao", {
-    headers: { "content-typel": "text/plain" },
+  event.respondWith(handleRequest(await myResponse));
+});
+/**
+ * Respond with hello worker text
+ * @param {Request} request
+ */
+async function handleRequest(response) {
+  return new Response(response.json(), {
+    headers: { "Content-Type": "application/json" },
+    "Accept-Charset": "utf-8",
+    "Accept-Encoding": "gzip",
+    "CF-Connecting-IP": "24.5.253.129",
   });
 }
