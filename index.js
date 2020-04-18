@@ -18,7 +18,7 @@ async function handleRequest(request) {
   let htmlContent= await fetch(randomVariant(variants)).then(res => res);
 
   //return 1 or 2 50% of the time
-  return new Response(randomVariant, {
-    headers: { "content-type": "text/html" },
+  return new Response(randomVariant(variants), {
+    headers: { "content-type": "text/plain" },
   });
 }
