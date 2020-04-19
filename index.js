@@ -1,15 +1,10 @@
 const URL = "https://cfw-takehome.developers.workers.dev/api/variants",
-  DEFAULT_EXPIRY_DAYS = 1;
+      SUB_URL= "https://cfw-takehome.developers.workers.dev/variants",
+      DEFAULT_EXPIRY_DAYS = 1;
 
 addEventListener("fetch", async (event) => {
   event.respondWith(handleRequest(event.request));
 });
-
-const getVariant = async (variantId) => {
-  return Math.round(Math.random()) < 0.5
-    ? await fetch(URL + `/${variantId}`)
-    : await fetch(URL + `/${variantId}`);
-};
 
 const getNewExpiryDate = (expiryDays) => {
   let date = new Date();
@@ -17,9 +12,12 @@ const getNewExpiryDate = (expiryDays) => {
   return date.toGMTString();
 };
 
-const takeVariant = () => {
-  return "hello";
-};
+const parseURL= (cookie) => {
+  const urlRegex = /(?<=variant=)\S+/;
+  let url = cookie.match(urlRegex)[0];
+
+  return url;
+}
 
 const getResponseFromCookie = async (cookie) => {
   const urlRegex = /(?<=variant=)\S+(?=;)/;
@@ -30,10 +28,7 @@ const getResponseFromCookie = async (cookie) => {
 };
 
 const resetCookie = (cookie) => {
-  const urlRegex = /(?<=variant=)\S+(?=;)/;
-  let url = cookie.match(urlRegex)[0];
-
-  cookie = `variant=${url}; Expires=${getNewExpiryDate(
+  cookie = `variant=${parseURL(cookie)}; Expires=${getNewExpiryDate(
     DEFAULT_EXPIRY_DAYS
   )}; Path=/`;
   return cookie;
@@ -43,19 +38,20 @@ const responseCreator = async (request) => {
   let cookie = request.headers.get("cookie");
   let response;
   // check if the cookie exists. If it does, parse the cookie and call the variant from that
-  // if cookie exist, we parse it, then reset it to a new expiry date.
+  // if a cookie exist, we parse it, then reset it to a new expiry date.
   if (cookie) {
     cookie = resetCookie(cookie);
     response = await getResponseFromCookie(cookie);
   } else {
+  // else if the cookie does not exist, we create a new cookie.
     let randomVariant = Math.round(Math.random()) < 0.5 ? 1 : 2;
-    response = fetch(url + `/${randomVariant}`);
-    cookie = `variant=${URL + "/" + randomVariant}; Expires=${getNewExpiryDate(
+    response = await fetch(SUB_URL + `/${randomVariant}`);
+    cookie = `variant=${SUB_URL + "/" + randomVariant}; Expires=${getNewExpiryDate(
       DEFAULT_EXPIRY_DAYS
     )}; Path=/`;
   }
 
-  return new Response(response.body, {
+  return new Response(await response.body, {
     headers: { "Set-Cookie": cookie },
   });
 };
@@ -96,5 +92,5 @@ class ElementHandler {
 async function handleRequest(request) {
   return new HTMLRewriter()
     .on("*", new ElementHandler())
-    .transform(responseCreator(request));
+    .transform(await responseCreator(request));
 }
